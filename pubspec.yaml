@@ -40,6 +40,8 @@ dependencies:
   webview_flutter: any
   flutter_map_cancellable_tile_provider: ^2.0.0
   flutter_map_location_marker: ^8.0.2
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
 
 dev_dependencies:
   flutter_test:
