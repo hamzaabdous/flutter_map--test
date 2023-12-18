@@ -27,6 +27,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Position? _currentPosition;
+  LatLng endLatLng = LatLng(35.779, -5.803); // Ending point coordinates
+
 
   @override
   void initState() {
@@ -41,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
 
       setState(() {
-        _currentPosition =position;
+        _currentPosition = position;
       });
     } catch (e) {
       print(e);
@@ -70,6 +72,18 @@ class _MyHomePageState extends State<MyHomePage> {
             userAgentPackageName: 'com.example.app',
           ),
           CurrentLocationLayer(),
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: [
+                  LatLng(
+                      _currentPosition!.latitude, _currentPosition!.longitude),
+                  LatLng(35.779, -5.803)
+                ],
+                color: Colors.blue,
+              ),
+            ],
+          ),
           RichAttributionWidget(
             attributions: [
               TextSourceAttribution(
@@ -83,9 +97,8 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-
-
 }
+
 Widget build() {
   return CurrentLocationLayer(
     followOnLocationUpdate: FollowOnLocationUpdate.always,
@@ -102,4 +115,3 @@ Widget build() {
     ),
   );
 }
-
