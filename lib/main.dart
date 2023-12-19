@@ -6,6 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map_location_marker/flutter_map_location_marker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+//import 'package:flutter_map/plugin_api.dart';
+
+import 'myInput.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,14 +34,16 @@ class _MyHomePageState extends State<MyHomePage> {
   Position? _currentPosition;
   LatLng endLatLng = LatLng(35.779, -5.803); // Ending point coordinates
   bool _hasPermissions = false;
-
+  final start = TextEditingController();
+  final end = TextEditingController();
+  List<LatLng> routpoints = [LatLng(52.05884, -1.345583)];
+  bool isVisible = false;
 
   @override
   void initState() {
     super.initState();
     _fetchPermissionStatus();
-    _getCurrentLocation();
-
+    //_getCurrentLocation();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -55,6 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
   }
+
   Widget _buildPermissionSheet() {
     return Center(
       child: Column(
@@ -90,6 +98,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,10 +106,52 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text('My App'),
       ), // use Scaffold also in order to provide material app widgets
-      body: Builder(builder:(context){
+      body: Builder(builder: (context) {
         if (_hasPermissions) {
+          _getCurrentLocation();
+
           return Column(
             children: <Widget>[
+              myInput(controler: start, hint: 'Enter Starting PostCode'),
+              SizedBox(
+                height: 15,
+              ),
+              myInput(controler: end, hint: 'Enter Ending PostCode'),
+              SizedBox(
+                height: 15,
+              ),
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[500]),
+                  onPressed: () async{
+                    List<Location> start_l = await locationFromAddress(start.text);
+                    List<Location> end_l = await locationFromAddress(end.text);
+
+                    var v1 = start_l[0].latitude;
+                    var v2 = start_l[0].longitude;
+                    var v3 = end_l[0].latitude;
+                    var v4 = end_l[0].longitude;
+
+
+                    var url = Uri.parse('http://router.project-osrm.org/route/v1/driving/$v2,$v1;$v4,$v3?steps=true&annotations=true&geometries=geojson&overview=full');
+                    var response = await http.get(url);
+                    print(response.body);
+                    setState(() {
+                      routpoints = [];
+                      var ruter = jsonDecode(response.body)['routes'][0]['geometry']['coordinates'];
+                      for(int i=0; i< ruter.length; i++){
+                        var reep = ruter[i].toString();
+                        reep = reep.replaceAll("[","");
+                        reep = reep.replaceAll("]","");
+                        var lat1 = reep.split(',');
+                        var long1 = reep.split(",");
+                        routpoints.add(LatLng( double.parse(lat1[1]), double.parse(long1[0])));
+                      }
+                      isVisible = !isVisible;
+                      print(routpoints);
+                    });
+                  },
+                  child: Text('Press')),
+              SizedBox(height: 10,),
               Expanded(child: _map()),
             ],
           );
@@ -110,45 +161,41 @@ class _MyHomePageState extends State<MyHomePage> {
       }),
     );
   }
-  Widget _map(){
-    return FlutterMap(
-      options: MapOptions(
-        initialCenter:
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-        initialZoom: 9.2,
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.app',
-        ),
-        CurrentLocationLayer(),
-        PolylineLayer(
-          polylines: [
-            Polyline(
-              points: [
-                LatLng(
-                    _currentPosition!.latitude, _currentPosition!.longitude),
-                LatLng(35.779, -5.803)
-              ],
-              color: Colors.blue,
+
+  Widget _map() {
+    return SizedBox(
+        height: 500,
+        width: 400,
+        child: Visibility(
+          visible: true,
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: LatLng(
+                  _currentPosition!.latitude, _currentPosition!.longitude),
+              initialZoom: 9.2,
             ),
-          ],
-        ),
-        RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution(
-              'OpenStreetMap contributors',
-              onTap: () =>
-                  launchUrl(Uri.parse('https://openstreetmap.org/copyright')),
-            ),
-          ],
-        ),
-      ],
-    );
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.app',
+              ),
+              CurrentLocationLayer(),
+              PolylineLayer(
+                polylineCulling: false,
+                polylines: [
+                  Polyline(points: routpoints, color: Colors.blue, strokeWidth: 9)
+                ],
+              ),
+              RichAttributionWidget(
+                attributions: [
+
+                ],
+              ),
+            ],
+          ),
+        ));
   }
 }
-
 
 Widget build() {
   return CurrentLocationLayer(
