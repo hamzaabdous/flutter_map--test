@@ -8,9 +8,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-//import 'package:flutter_map/plugin_api.dart';
 
+import 'myCurrentLocationLayer.dart';
 import 'myInput.dart';
+import 'myMap.dart';
 
 void main() {
   runApp(MyApp());
@@ -43,7 +44,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _fetchPermissionStatus();
-    //_getCurrentLocation();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -152,7 +152,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   child: Text('Press')),
               SizedBox(height: 10,),
-              Expanded(child: _map()),
+              Expanded(child: SizedBox(
+                  height: 500,
+                  width: 400,
+                  child: Visibility(
+                    visible: true,
+                    child: _map(),
+                  ))),
             ],
           );
         } else {
@@ -163,53 +169,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _map() {
-    return SizedBox(
-        height: 500,
-        width: 400,
-        child: Visibility(
-          visible: true,
-          child: FlutterMap(
-            options: MapOptions(
-              initialCenter: LatLng(
-                  _currentPosition!.latitude, _currentPosition!.longitude),
-              initialZoom: 9.2,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.app',
-              ),
-              CurrentLocationLayer(),
-              PolylineLayer(
-                polylineCulling: false,
-                polylines: [
-                  Polyline(points: routpoints, color: Colors.blue, strokeWidth: 9)
-                ],
-              ),
-              RichAttributionWidget(
-                attributions: [
-
-                ],
-              ),
-            ],
-          ),
-        ));
+    return myMap(currentPosition: _currentPosition, routpoints: routpoints);
   }
 }
 
+
+
 Widget build() {
-  return CurrentLocationLayer(
-    followOnLocationUpdate: FollowOnLocationUpdate.always,
-    turnOnHeadingUpdate: TurnOnHeadingUpdate.never,
-    style: LocationMarkerStyle(
-      marker: const DefaultLocationMarker(
-        child: Icon(
-          Icons.navigation,
-          color: Colors.white,
-        ),
-      ),
-      markerSize: const Size(40, 40),
-      markerDirection: MarkerDirection.heading,
-    ),
-  );
+  return myCurrentLocationLayer();
 }
+
+
